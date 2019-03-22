@@ -1,5 +1,5 @@
 import React from 'react';
-import { Animated, Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, Image, ScrollView, StyleSheet, Text, View, Easing, SectionList } from 'react-native';
 
 
 const HEADER_MAX_HEIGHT = 200;
@@ -11,6 +11,24 @@ class App extends React.Component {
     super(props);
 
     this.state = { scrollY: new Animated.Value(0) };
+    this.animatedValue = new Animated.Value(0);
+  }
+ 
+  componentDidMount() {
+    this._animateImage()
+  }
+
+  _animateImage() {
+    this.animatedValue.setValue(0);
+    Animated.timing(
+      this.animatedValue,
+      {
+        toValue: 1,
+        duration: 2000,
+        // easing: Easing.linear 
+        easing: Easing.circle
+      }
+    ).start(() => this._animateImage());
   }
 
   _renderScrollViewContent() {
@@ -24,6 +42,16 @@ class App extends React.Component {
         ))}
       </View>
     );
+  }
+
+  _renderHeaderSection() {
+    return (
+      <View style={styles.scrollViewContent}>
+          <View style={styles.row}>
+            <Text>HEADERRR</Text>
+          </View>
+      </View>
+    )
   }
 
   render() {
@@ -40,25 +68,50 @@ class App extends React.Component {
     });
     const imageTranslate = this.state.scrollY.interpolate({
       inputRange: [0, HEADER_SCROLL_DISTANCE],
-      outputRange: [0, -50],
+      outputRange: [0, -150],
       extrapolate: 'clamp',
+    });
+    const spin = this.state.scrollY.interpolate({
+      inputRange: [0, HEADER_SCROLL_DISTANCE],
+      outputRange: ['0deg', '360deg'],
+      extrapolate: 'clamp',
+    });
+    const imageRight = this.animatedValue.interpolate({
+      inputRange: [0, 1],
+      outputRange: [-250, 250]
     });
 
 
     return (
       <View style={styles.fill}>
-        <ScrollView 
+
+        <SectionList
+          stickySectionHeadersEnabled
+          sections={[
+            {title: 'Title1', data: ['item1', 'item2']},
+            {title: 'Title2', data: ['item3', 'item4']},
+            {title: 'Title3', data: ['item5', 'item6']},
+          ]}
+          renderItem={this._renderScrollViewContent}
+          renderSectionHeader={this._renderHeaderSection}
+          keyExtractor={(item, i) => (Math.random()*100).toString()}
+          scrollEventThrottle={16} 
+          onScroll={ Animated.event([{nativeEvent: {contentOffset: {y: this.state.scrollY}}}])}
+        >
+        </SectionList>
+
+        {/* <ScrollView 
           style={styles.fill} 
           scrollEventThrottle={16} 
           onScroll={ Animated.event([{nativeEvent: {contentOffset: {y: this.state.scrollY}}}])}
         >
           {this._renderScrollViewContent()}
-        </ScrollView>
+        </ScrollView> */}
         <Animated.View style={[styles.header, { height: headerHeight }]}> 
           <Animated.Image
             style={[
               styles.backgroundImage,
-              {opacity: imageOpacity, transform: [{translateY: imageTranslate}]},
+              {opacity: imageOpacity, transform: [{translateY: imageTranslate}, {rotate: spin}]},
             ]}
             source={require('./images/cat.jpg')}
           />
@@ -66,6 +119,16 @@ class App extends React.Component {
             <Text style={styles.title}>Title</Text>
           </View>
         </Animated.View>
+
+        {/* <Animated.Image
+          style={[
+            styles.floatingImage,
+            {transform: [{translateX: imageRight}]}
+          ]}
+          source={require('./images/cat.jpg')}
+        > 
+
+        </Animated.Image> */}
       </View>
     );
   }
@@ -114,6 +177,12 @@ const styles = StyleSheet.create({
     height: HEADER_MAX_HEIGHT,
     resizeMode: 'cover',
   },
+  floatingImage: {
+    position: 'absolute',
+    top: 300, 
+    width: 250,
+    height: 150,
+  }
 });
 
 export default App;
